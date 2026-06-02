@@ -1,65 +1,136 @@
+import { ArrowRight, Clock3, ShieldCheck, Zap } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { ProductCard } from "@/components/product-card";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+import { getPublishedProducts } from "@/lib/catalog-service";
 
-export default function Home() {
+const confidence = [
+  [ShieldCheck, "Voucher จากแหล่งที่ได้รับอนุญาต"],
+  [Zap, "รับโค้ดทันทีหลังชำระเงิน"],
+  [Clock3, "ดูคำสั่งซื้อได้ทุกเวลา"],
+] as const;
+
+export default async function Home() {
+  const products = await getPublishedProducts();
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+    <>
+      <SiteHeader />
+      <main>
+        <section className="container-shell grid min-h-[630px] items-center gap-12 py-14 lg:grid-cols-[1.03fr_.97fr] lg:py-20">
+          <div>
+            <h1 className="max-w-[660px] text-[48px] font-black leading-[1.16] tracking-[-0.055em] text-[#070f2a] sm:text-[68px]">
+              พรีเมียมที่ชอบ
+              <br />
+              พร้อมใช้ในไม่กี่นาที
+            </h1>
+            <p className="mt-7 max-w-[590px] text-lg leading-8 text-muted">
+              เลือก Voucher ที่ต้องการ ชำระเงินง่าย และรับโค้ดทันที
+              พร้อมกลับมาดูคำสั่งซื้อได้ทุกเวลา
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-5">
+              <Link
+                href="/products"
+                className="inline-flex h-14 items-center rounded-lg bg-brand px-7 text-base font-bold text-white hover:bg-brand-dark"
+              >
+                เลือกซื้อเลย
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="inline-flex items-center gap-2 font-bold text-brand"
+              >
+                ดูวิธีใช้งาน <ArrowRight size={18} />
+              </Link>
+            </div>
+          </div>
+          <div className="relative mx-auto h-[360px] w-full max-w-[650px] sm:h-[480px]">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              src="/products/netflix-gift-code.png"
+              alt="Netflix Gift Code"
+              width={660}
+              height={412}
+              priority
+              loading="eager"
+              className="voucher-shadow absolute left-[3%] top-[20%] w-[58%] -rotate-6 rounded-2xl"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+            <Image
+              src="/products/youtube-premium.png"
+              alt="YouTube Premium"
+              width={660}
+              height={412}
+              priority
+              loading="eager"
+              className="voucher-shadow absolute left-[23%] top-[6%] z-10 w-[58%] rounded-2xl"
+            />
+            <Image
+              src="/products/spotify-gift-card.png"
+              alt="Spotify Gift Card"
+              width={660}
+              height={412}
+              priority
+              loading="eager"
+              className="voucher-shadow absolute right-[0%] top-[28%] w-[58%] rotate-6 rounded-2xl"
+            />
+          </div>
+        </section>
+
+        <section className="border-y border-line">
+          <div className="container-shell grid grid-cols-3 gap-px">
+            {confidence.map(([Icon, label]) => (
+              <div
+                key={label}
+                className="flex flex-col items-center gap-2 border-line px-2 py-4 text-center md:flex-row md:gap-4 md:border-r md:px-8 md:py-6 md:text-left md:first:border-l"
+              >
+                <Icon className="text-brand" size={27} strokeWidth={1.8} />
+                <span className="text-[10px] font-bold leading-4 text-[#233252] md:text-sm">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="container-shell py-14 sm:py-20">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-black tracking-[-0.04em]">Voucher ยอดนิยม</h2>
+              <p className="mt-2 text-muted">เริ่มต้นง่าย เลือกระยะเวลาได้ตามต้องการ</p>
+            </div>
+            <Link
+              href="/products"
+              className="hidden items-center gap-2 text-sm font-bold text-brand sm:flex"
+            >
+              ดูสินค้าทั้งหมด <ArrowRight size={17} />
+            </Link>
+          </div>
+          <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4">
+            {products.map((product) => (
+              <ProductCard key={product.slug} product={product} />
+            ))}
+          </div>
+        </section>
+
+        <section id="how-it-works" className="border-y border-line bg-[#fbfcff]">
+          <div className="container-shell py-14 sm:py-20">
+            <h2 className="text-3xl font-black tracking-[-0.04em]">วิธีใช้งาน</h2>
+            <div className="mt-8 grid gap-8 md:grid-cols-3">
+              {[
+                ["01", "เลือก Voucher", "เลือกบริการ ระยะเวลา และจำนวนที่คุณต้องการ"],
+                ["02", "ชำระเงิน", "ตรวจสอบรายการและยืนยันการชำระเงินอย่างปลอดภัย"],
+                ["03", "รับโค้ดทันที", "ดู Voucher ในหน้าคำสั่งซื้อและคัดลอกไปใช้งาน"],
+              ].map(([number, title, description]) => (
+                <div key={number} className="border-t-2 border-brand pt-5">
+                  <span className="text-sm font-black text-brand">{number}</span>
+                  <h3 className="mt-3 text-xl font-black">{title}</h3>
+                  <p className="mt-2 leading-7 text-muted">{description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
-    </div>
+      <SiteFooter />
+    </>
   );
 }

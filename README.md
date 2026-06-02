@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PrimePass
 
-## Getting Started
+ร้าน Voucher ดิจิทัลภาษาไทยสำหรับสินค้าจาก distributor ที่ได้รับอนุญาต สร้างด้วย Next.js App Router, Prisma, PostgreSQL, Better Auth และ Resend
 
-First, run the development server:
+## ฟีเจอร์
+
+- Storefront responsive: หน้าแรก, catalog, product detail, cart และ checkout
+- Demo payment adapter พร้อม UI สำหรับ PromptPay QR และเส้นทางเปลี่ยน provider ใน production
+- Better Auth แบบ email/password
+- Prisma schema สำหรับสินค้า variants, Voucher inventory, order, payment และ audit log
+- Voucher encryption แบบ AES-256-GCM, duplicate hash, masked display และ reveal audit
+- Admin dashboard สำหรับสินค้า, order และ CSV inventory import
+- SEO metadata, JSON-LD, sitemap และ robots policy
+
+## เริ่มต้นใช้งาน
 
 ```bash
+npm install
+cp .env.example .env
+npm run db:generate
+npm run db:migrate:dev -- --name init
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+สร้าง encryption key:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+openssl rand -hex 32
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+หากยังไม่ตั้ง `DATABASE_URL` หน้าร้านยังเปิดดูและทดลอง cart/checkout ได้ โดย checkout จะใช้ local demo fallback ระบบบัญชีและ API production จะเปิดเมื่อเชื่อม PostgreSQL แล้ว
 
-## Learn More
+## CSV Inventory
 
-To learn more about Next.js, take a look at the following resources:
+```csv
+variantSlug,code,expiresAt
+netflix-gift-code-1-month,EXAMPLE-CODE-0001,2027-12-31
+spotify-gift-card-1-month,EXAMPLE-CODE-0002,
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Voucher จะถูกเข้ารหัสก่อนบันทึก และ `codeHash` จะใช้ตรวจรายการซ้ำโดยไม่เก็บ plaintext
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy: Vercel + Neon
 
-## Deploy on Vercel
+1. สร้าง Neon database ผ่าน Vercel Marketplace
+2. ตั้งค่า env ตาม `.env.example`
+3. รัน `npm run db:migrate` และ `npm run db:seed`
+4. Verify domain ใน Resend แล้วตั้ง `RESEND_API_KEY` และ `EMAIL_FROM`
+5. Deploy ไปยัง Vercel; `vercel.json` ตั้ง daily cleanup สำหรับ Hobby plan
+6. ทดสอบ register, checkout, email link, reveal และ admin CSV import
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+เมื่อเปิดรับเงินจริง ให้สร้าง Stripe adapter เพิ่มจาก interface ใน `src/lib/payments.ts`, เชื่อม webhook และเปิด PromptPay ใน Stripe Dashboard
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ตรวจสอบคุณภาพ
+
+```bash
+npm run lint
+npm run test
+npm run build
+```

@@ -1,4 +1,4 @@
-import { fallbackProducts, type CatalogProduct } from "@/lib/catalog";
+import type { CatalogProduct } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 
 function toCatalogProduct(product: {
@@ -30,7 +30,7 @@ function toCatalogProduct(product: {
 }
 
 export async function getPublishedProducts() {
-  if (!prisma) return fallbackProducts;
+  if (!prisma) return [];
   const products = await prisma.product.findMany({
     where: { isPublished: true },
     include: {
@@ -41,11 +41,11 @@ export async function getPublishedProducts() {
     },
     orderBy: { createdAt: "asc" },
   });
-  return products.length ? products.map(toCatalogProduct) : fallbackProducts;
+  return products.map(toCatalogProduct);
 }
 
 export async function getCatalogProduct(slug: string) {
-  if (!prisma) return fallbackProducts.find((product) => product.slug === slug);
+  if (!prisma) return undefined;
   const product = await prisma.product.findUnique({
     where: { slug, isPublished: true },
     include: {

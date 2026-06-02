@@ -51,23 +51,32 @@ const products = [
   },
 ];
 
-for (const product of products) {
-  const { prices, ...data } = product;
-  await prisma.product.upsert({
-    where: { slug: product.slug },
-    update: data,
-    create: {
-      ...data,
-      variants: {
-        create: prices.map((price, index) => ({
-          slug: `${product.slug}-${[1, 3, 6][index]}-month`,
-          label: `${[1, 3, 6][index]} เดือน`,
-          durationMonths: [1, 3, 6][index],
-          price,
-        })),
+async function main() {
+  for (const product of products) {
+    const { prices, ...data } = product;
+    await prisma.product.upsert({
+      where: { slug: product.slug },
+      update: data,
+      create: {
+        ...data,
+        variants: {
+          create: prices.map((price, index) => ({
+            slug: `${product.slug}-${[1, 3, 6][index]}-month`,
+            label: `${[1, 3, 6][index]} เดือน`,
+            durationMonths: [1, 3, 6][index],
+            price,
+          })),
+        },
       },
-    },
-  });
+    });
+  }
 }
 
-await prisma.$disconnect();
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

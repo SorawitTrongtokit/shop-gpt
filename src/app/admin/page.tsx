@@ -3,7 +3,7 @@ import { AdminShell } from "@/components/admin/admin-shell";
 import { OrdersTable } from "@/components/admin/orders-table";
 import { SummaryCards } from "@/components/admin/summary-cards";
 import { formatTHB } from "@/lib/catalog";
-import { getAdminOrders } from "@/lib/order-queries";
+import { getAdminOrders, getAdminSummary } from "@/lib/order-queries";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -11,10 +11,14 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  const orders = await getAdminOrders();
+  const [orders, summary] = await Promise.all([
+    getAdminOrders(),
+    getAdminSummary(),
+  ]);
+  
   return (
     <AdminShell title="ภาพรวม">
-      <SummaryCards />
+      <SummaryCards data={summary} />
       <section className="mt-6">
         <h2 className="mb-4 text-lg font-black">รายการคำสั่งซื้อล่าสุด</h2>
         <OrdersTable

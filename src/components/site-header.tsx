@@ -2,8 +2,10 @@
 
 import { Menu, Search, ShoppingCart } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/components/cart/cart-provider";
 import { Logo } from "@/components/ui/logo";
+import { authClient } from "@/lib/auth-client";
 
 const nav = [
   ["หน้าแรก", "/"],
@@ -14,6 +16,15 @@ const nav = [
 
 export function SiteHeader() {
   const { count } = useCart();
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await authClient.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
       <div className="container-shell flex h-[74px] items-center justify-between gap-6">
@@ -49,12 +60,21 @@ export function SiteHeader() {
               </span>
             )}
           </Link>
-          <Link
-            href="/login"
-            className="hidden px-2 text-sm font-bold text-[#253252] hover:text-brand sm:block"
-          >
-            เข้าสู่ระบบ
-          </Link>
+          {session?.user ? (
+            <button
+              onClick={handleLogout}
+              className="hidden px-2 text-sm font-bold text-[#253252] hover:text-brand sm:block cursor-pointer"
+            >
+              ออกจากระบบ
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden px-2 text-sm font-bold text-[#253252] hover:text-brand sm:block"
+            >
+              เข้าสู่ระบบ
+            </Link>
+          )}
           <Link
             href="/products"
             className="hidden h-11 items-center rounded-lg bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark md:flex"

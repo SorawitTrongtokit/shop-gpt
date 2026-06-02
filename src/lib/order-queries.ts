@@ -57,3 +57,56 @@ export async function getAdminOrders() {
     take: 20,
   });
 }
+
+export async function getAdminSummary() {
+  if (!prisma) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [todayOrders, pendingPayment, fulfilled, variants] = await Promise.all([
+    prisma.order.aggregate({
+      where: { createdAt: { gte: today } },
+      _count: true,
+      _sum: { total: true },
+    }),
+    prisma.order.aggregate({
+      where: { status: "PENDING_PAYMENT" },
+      _count: true,
+      _sum: { total: true },
+    }),
+    prisma.order.aggregate({
+      where: { status: "FULFILLED" },
+      _count: true,
+      _sum: { total: true },
+    }),
+    prisma.productVariant.findMany({
+      where: { isActive: true },
+      select: {
+        stockThreshold: true,
+        _count: {
+          select: { vouchers: { where: { status: "AVAILABLE" } } },
+        },
+      },
+    }),
+  ]);
+
+  const lowStockCount = variants.filter(
+    (v) => v._count.vouchers <= v.stockThreshold
+  ).length;
+
+  return {
+    todayOrders: {
+      count: todayOrders._count,
+      total: todayOrders._sum.total ?? 0,
+    },
+    pendingPayment: {
+      count: pendingPayment._count,
+      total: pendingPayment._sum.total ?? 0,
+    },
+    fulfilled: {
+      count: fulfilled._count,
+      total: fulfilled._sum.total ?? 0,
+    },
+    lowStockCount,
+  };
+}

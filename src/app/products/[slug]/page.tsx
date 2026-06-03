@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { ProductDetailActions } from "@/components/product-detail-actions";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -21,8 +22,10 @@ export async function generateMetadata({
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
+  await connection();
   const product = await getCatalogProduct((await params).slug);
   if (!product) notFound();
+  const hasStock = product.variants.some((variant) => (variant.stock ?? 0) > 0);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -35,7 +38,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
       priceCurrency: "THB",
       lowPrice: product.variants[0].price,
       highPrice: product.variants.at(-1)?.price,
-      availability: "https://schema.org/InStock",
+      availability: hasStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
     },
   };
 

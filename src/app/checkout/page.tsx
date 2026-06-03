@@ -24,7 +24,7 @@ export default function CheckoutPage() {
           <span className="h-px flex-1 bg-line" />
           <span>3 รับ Voucher</span>
         </div>
-        <CheckoutClient databaseConfigured={Boolean(process.env.DATABASE_URL)} />
+        <CheckoutClient />
       </main>
     </>
   );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { CatalogClient } from "@/components/catalog-client";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProductsPage() {
+  await connection();
   const products = await getPublishedProducts();
   return (
     <>

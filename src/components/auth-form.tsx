@@ -3,6 +3,7 @@
 import { Eye, TicketCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
@@ -52,7 +53,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   }
 
   return (
-    <form onSubmit={submit} className="w-full max-w-[500px]">
+    <motion.form
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+      onSubmit={submit}
+      className="w-full max-w-[500px]"
+    >
       <TicketCheck className="text-brand" size={32} />
       <h1 className="mt-5 text-4xl font-black tracking-[-0.04em]">
         {isRegister ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
@@ -70,7 +77,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               required
               value={fields.name}
               onChange={(event) => setFields({ ...fields, name: event.target.value })}
-              className="h-12 rounded-lg border border-line px-4 font-normal outline-none focus:border-brand"
+              className="h-12 rounded-lg border border-line px-4 font-normal outline-none focus:border-brand transition-colors"
               placeholder="กรอกชื่อ-นามสกุล"
             />
           </label>
@@ -82,7 +89,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             type="email"
             value={fields.email}
             onChange={(event) => setFields({ ...fields, email: event.target.value })}
-            className="h-12 rounded-lg border border-line px-4 font-normal outline-none focus:border-brand"
+            className="h-12 rounded-lg border border-line px-4 font-normal outline-none focus:border-brand transition-colors"
             placeholder="กรอกอีเมลของคุณ"
           />
         </label>
@@ -94,7 +101,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             minLength={8}
             value={fields.password}
             onChange={(event) => setFields({ ...fields, password: event.target.value })}
-            className="h-12 rounded-lg border border-line px-4 pr-11 font-normal outline-none focus:border-brand"
+            className="h-12 rounded-lg border border-line px-4 pr-11 font-normal outline-none focus:border-brand transition-colors"
             placeholder="กรอกรหัสผ่านของคุณ"
           />
           <Eye className="absolute bottom-3.5 right-4 text-muted" size={17} />
@@ -110,32 +117,33 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               onChange={(event) =>
                 setFields({ ...fields, confirmPassword: event.target.value })
               }
-              className="h-12 rounded-lg border border-line px-4 font-normal outline-none focus:border-brand"
+              className="h-12 rounded-lg border border-line px-4 font-normal outline-none focus:border-brand transition-colors"
               placeholder="ยืนยันรหัสผ่านของคุณ"
             />
           </label>
         )}
       </div>
       {error && <p className="mt-4 text-sm font-bold text-red-600">{error}</p>}
-      <button
+      <motion.button
+        whileTap={{ scale: 0.98 }}
         disabled={isLoading}
-        className="mt-6 flex h-12 w-full items-center justify-center rounded-lg bg-brand font-bold text-white hover:bg-brand-dark disabled:opacity-60"
+        className="mt-6 flex h-12 w-full items-center justify-center rounded-lg bg-brand font-bold text-white hover:bg-brand-dark disabled:opacity-60 transition-colors"
       >
         {isLoading
           ? "กำลังดำเนินการ..."
           : isRegister
             ? "สร้างบัญชี"
             : "เข้าสู่ระบบ"}
-      </button>
+      </motion.button>
       <p className="mt-6 text-center text-sm text-muted">
         {isRegister ? "มีบัญชีอยู่แล้ว? " : "ยังไม่มีบัญชี? "}
         <a
-          className="font-bold text-brand"
+          className="font-bold text-brand transition-colors hover:text-brand-dark"
           href={isRegister ? "/login" : "/register"}
         >
           {isRegister ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
         </a>
       </p>
-    </form>
+    </motion.form>
   );
 }

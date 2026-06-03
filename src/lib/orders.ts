@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePrisma } from "@/lib/prisma";
-import { getPaymentProvider } from "@/lib/payments";
+import type { PaymentConfirmation } from "@/lib/payments";
 import { sendFulfillmentEmail } from "@/lib/email";
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
@@ -130,11 +130,98 @@ export async function reserveCheckout(input: CheckoutInput) {
   );
 }
 
-export async function fulfillDemoPayment(orderNumber: string, userId: string) {
+export async function getPaymentOrderForUser(orderNumber: string, userId: string) {
   const prisma = requirePrisma();
-  const provider = getPaymentProvider();
-  const payment = await provider.confirm(orderNumber);
+  const order = await prisma.order.findUnique({
+    where: { orderNumber },
+    select: {
+      id: true,
+      orderNumber: true,
+      userId: true,
+      status: true,
+      total: true,
+      currency: true,
+      reservationExpiry: true,
+      items: {
+        select: {
+          productName: true,
+          variantName: true,
+          quantity: true,
+          lineTotal: true,
+        },
+      },
+    },
+  });
+  if (!order || order.userId !== userId) {
+    throw new Error("ไม่พบคำสั่งซื้อ");
+  }
+  if (order.status === "PENDING_PAYMENT" && order.reservationExpiry < new Date()) {
+    await releaseExpiredReservations();
+    throw new Error("คำสั่งซื้อนี้หมดเวลาแล้ว");
+  }
+  return order;
+}
 
+export async function cancelPaymentOrderForUser(orderNumber: string, userId: string) {
+  const prisma = requirePrisma();
+  return prisma.$transaction(
+    async (tx) => {
+      const current = await tx.order.findUnique({
+        where: { orderNumber },
+      });
+      if (!current || current.userId !== userId) {
+        throw new Error("ไม่พบคำสั่งซื้อ");
+      }
+      if (current.status === "CANCELLED") {
+        return current;
+      }
+      if (current.status === "FULFILLED" || current.status === "PAID") {
+        throw new Error("คำสั่งซื้อนี้ชำระเงินสำเร็จแล้ว ไม่สามารถยกเลิกได้");
+      }
+      if (current.status !== "PENDING_PAYMENT" && current.status !== "EXPIRED") {
+        throw new Error("คำสั่งซื้อนี้ไม่สามารถยกเลิกได้");
+      }
+
+      await tx.voucherInventory.updateMany({
+        where: { reservedOrderId: current.id, status: "RESERVED" },
+        data: {
+          status: "AVAILABLE",
+          reservedUntil: null,
+          reservedOrderId: null,
+        },
+      });
+
+      const cancelled = await tx.order.update({
+        where: { id: current.id },
+        data: { status: "CANCELLED" },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "ORDER_CANCELLED_BY_CUSTOMER",
+          entity: "Order",
+          entityId: current.id,
+          metadata: { orderNumber },
+        },
+      });
+
+      return cancelled;
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+export async function fulfillPromptPayPayment({
+  orderNumber,
+  payment,
+  userId,
+}: {
+  orderNumber: string;
+  payment: PaymentConfirmation;
+  userId: string;
+}) {
+  const prisma = requirePrisma();
   const order = await prisma.$transaction(
     async (tx) => {
       const current = await tx.order.findUnique({
@@ -152,18 +239,34 @@ export async function fulfillDemoPayment(orderNumber: string, userId: string) {
       if (current.reservationExpiry < new Date()) {
         throw new Error("คำสั่งซื้อนี้หมดเวลาแล้ว");
       }
+      if (Math.abs(payment.amountInSlip - current.total) >= 0.01) {
+        throw new Error("ยอดเงินในสลิปไม่ตรงกับยอดคำสั่งซื้อ");
+      }
 
-      await tx.paymentAttempt.upsert({
-        where: { idempotencyKey: `demo:${orderNumber}` },
-        update: { status: "SUCCEEDED" },
-        create: {
-          orderId: current.id,
-          provider: provider.name,
-          providerRef: payment.providerRef,
-          idempotencyKey: `demo:${orderNumber}`,
-          status: payment.status,
-        },
+      const idempotencyKey = `easyslip:${payment.providerRef}`;
+      const existingPayment = await tx.paymentAttempt.findUnique({
+        where: { idempotencyKey },
       });
+      if (existingPayment && existingPayment.orderId !== current.id) {
+        throw new Error("สลิปนี้ถูกใช้กับคำสั่งซื้ออื่นแล้ว");
+      }
+      if (existingPayment) {
+        await tx.paymentAttempt.update({
+          where: { id: existingPayment.id },
+          data: { status: "SUCCEEDED" },
+        });
+      } else {
+        await tx.paymentAttempt.create({
+          data: {
+            orderId: current.id,
+            provider: "easyslip",
+            providerRef: payment.providerRef,
+            idempotencyKey,
+            status: payment.status,
+          },
+        });
+      }
+
       await tx.voucherInventory.updateMany({
         where: { reservedOrderId: current.id, status: "RESERVED" },
         data: {

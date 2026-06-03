@@ -1,12 +1,10 @@
 import { z } from "zod";
 import { reserveCheckout } from "@/lib/orders";
+import { getPromptPayQrUrl } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 
 const checkoutSchema = z.object({
-  customerName: z.string().trim().min(2).max(120),
-  customerEmail: z.email(),
-  customerPhone: z.string().trim().min(8).max(30),
   items: z
     .array(
       z.object({
@@ -28,9 +26,17 @@ export async function POST(request: Request) {
     }
     const user = await requireUser();
     const input = checkoutSchema.parse(await request.json());
-    const order = await reserveCheckout({ ...input, userId: user.id });
+    const order = await reserveCheckout({
+      ...input,
+      userId: user.id,
+      customerName: getCustomerName(user),
+      customerEmail: user.email,
+      customerPhone: "ACCOUNT_LOGIN",
+    });
     return Response.json({
       orderNumber: order.orderNumber,
+      total: order.total,
+      promptPayQrUrl: getPromptPayQrUrl(order.total),
       reservationExpiry: order.reservationExpiry,
     });
   } catch (error) {
@@ -43,4 +49,8 @@ export async function POST(request: Request) {
           : 400;
     return Response.json({ error: message }, { status });
   }
+}
+
+function getCustomerName(user: { name?: string | null; email: string }) {
+  return user.name?.trim() || user.email;
 }

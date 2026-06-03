@@ -1,4 +1,4 @@
-import { getVariant } from "@/lib/catalog";
+import { getVariant, type CatalogProduct } from "@/lib/catalog";
 
 export const CART_STORAGE_KEY = "primepass-cart-v1";
 
@@ -12,7 +12,7 @@ export type StoredCart = {
   items: CartLine[];
 };
 
-export function sanitizeCart(input: unknown): StoredCart {
+export function sanitizeCart(input: unknown, catalog: CatalogProduct[] = []): StoredCart {
   if (!input || typeof input !== "object" || !("items" in input)) {
     return { version: 1, items: [] };
   }
@@ -28,9 +28,11 @@ export function sanitizeCart(input: unknown): StoredCart {
       typeof item.quantity !== "number" ||
       !Number.isInteger(item.quantity) ||
       item.quantity < 1 ||
-      item.quantity > 10 ||
-      !getVariant(item.variantSlug)
+      item.quantity > 10
     ) {
+      return [];
+    }
+    if (catalog.length > 0 && !getVariant(item.variantSlug, catalog)) {
       return [];
     }
     return [{ variantSlug: item.variantSlug, quantity: item.quantity }];
@@ -39,9 +41,9 @@ export function sanitizeCart(input: unknown): StoredCart {
   return { version: 1, items };
 }
 
-export function calculateCartTotal(items: CartLine[]) {
+export function calculateCartTotal(items: CartLine[], catalog: CatalogProduct[] = []) {
   return items.reduce((total, item) => {
-    const catalogItem = getVariant(item.variantSlug);
+    const catalogItem = getVariant(item.variantSlug, catalog);
     return total + (catalogItem?.variant.price ?? 0) * item.quantity;
   }, 0);
 }

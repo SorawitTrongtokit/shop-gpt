@@ -4,6 +4,7 @@ export type CatalogVariant = {
   durationMonths: number;
   price: number;
   currency: "THB";
+  stock?: number;
 };
 
 export type CatalogProduct = {
@@ -95,12 +96,26 @@ export const formatTHB = (amount: number) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
+export function getSellableStock(variant: CatalogVariant) {
+  return variant.stock ?? Number.POSITIVE_INFINITY;
+}
+
+export function hasSellableStock(variant: CatalogVariant) {
+  return getSellableStock(variant) > 0;
+}
+
+export function formatStockLabel(variant: CatalogVariant) {
+  if (variant.stock === undefined) return "พร้อมส่งทันที";
+  if (variant.stock <= 0) return "สินค้าหมด";
+  return `เหลือ ${variant.stock.toLocaleString("th-TH")} ใบ`;
+}
+
 export function getProduct(slug: string) {
   return fallbackProducts.find((product) => product.slug === slug);
 }
 
-export function getVariant(variantSlug: string) {
-  for (const product of fallbackProducts) {
+export function getVariant(variantSlug: string, catalog: CatalogProduct[] = fallbackProducts) {
+  for (const product of catalog) {
     const found = product.variants.find((item) => item.slug === variantSlug);
     if (found) {
       return { product, variant: found };

@@ -21,6 +21,12 @@ export default async function SuccessPage({
   const isDemo = orderNumber.startsWith("PP-DEMO");
   const order = isDemo ? null : await getAccessibleOrder(orderNumber);
   if (!isDemo && !order) redirect(`/login?next=/checkout/success/${orderNumber}`);
+  if (!isDemo && order!.status === "PENDING_PAYMENT") {
+    redirect(`/checkout/payment/${orderNumber}`);
+  }
+  if (!isDemo && order!.status !== "FULFILLED") {
+    redirect(`/orders/${orderNumber}`);
+  }
   const vouchers = isDemo
     ? [{ id: "demo-voucher", masked: `XXXX-XXXX-${suffix}`, demoCode: `DEMO-${suffix}-PRIMEPASS` }]
     : order!.vouchers;

@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { Plus, Trash2, Save } from "lucide-react";
 import { saveProduct, deleteProduct } from "@/app/admin/products/actions";
 import { type ProductFormValues } from "@/app/admin/products/schema";
-import Image from "next/image";
+
+type ProductVariantFormValues = ProductFormValues["variants"][number];
 
 export function ProductForm({ initialData }: { initialData?: ProductFormValues }) {
   const [isPending, startTransition] = useTransition();
@@ -35,11 +36,18 @@ export function ProductForm({ initialData }: { initialData?: ProductFormValues }
     },
   );
 
-  function handleChange(field: keyof ProductFormValues, value: any) {
+  function handleChange<Field extends keyof ProductFormValues>(
+    field: Field,
+    value: ProductFormValues[Field],
+  ) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleVariantChange(index: number, field: string, value: any) {
+  function handleVariantChange<Field extends keyof ProductVariantFormValues>(
+    index: number,
+    field: Field,
+    value: ProductVariantFormValues[Field],
+  ) {
     const newVariants = [...formData.variants];
     newVariants[index] = { ...newVariants[index], [field]: value };
     setFormData((prev) => ({ ...prev, variants: newVariants }));
@@ -75,8 +83,8 @@ export function ProductForm({ initialData }: { initialData?: ProductFormValues }
     startTransition(async () => {
       try {
         await saveProduct(formData);
-      } catch (err: any) {
-        setError(err.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err, "เกิดข้อผิดพลาดในการบันทึกข้อมูล"));
       }
     });
   }
@@ -88,8 +96,8 @@ export function ProductForm({ initialData }: { initialData?: ProductFormValues }
     startTransition(async () => {
       try {
         await deleteProduct(formData.id!);
-      } catch (err: any) {
-        setError(err.message || "เกิดข้อผิดพลาดในการลบข้อมูล");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err, "เกิดข้อผิดพลาดในการลบข้อมูล"));
       }
     });
   }
@@ -378,4 +386,8 @@ export function ProductForm({ initialData }: { initialData?: ProductFormValues }
       </div>
     </form>
   );
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }

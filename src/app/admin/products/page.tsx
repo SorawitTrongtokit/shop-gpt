@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Plus, Edit } from "lucide-react";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { formatTHB } from "@/lib/catalog";
-import { getPublishedProducts } from "@/lib/catalog-service";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminProductsPage() {

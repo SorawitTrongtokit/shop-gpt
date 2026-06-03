@@ -33,11 +33,9 @@ export function OrdersTable({ rows }: { rows?: OrderRow[] }) {
                 <td className="px-5 py-4 font-bold">{total}</td>
                 <td className="px-5 py-4">
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-black ${
-                      status === "รอชำระเงิน"
-                        ? "bg-amber-50 text-amber-700"
-                        : "bg-green-50 text-[#158257]"
-                    }`}
+                    className={`rounded-full px-3 py-1 text-xs font-black ${getStatusClassName(
+                      status,
+                    )}`}
                   >
                     {status}
                   </span>
@@ -56,4 +54,11 @@ export function OrdersTable({ rows }: { rows?: OrderRow[] }) {
       </table>
     </div>
   );
+}
+
+function getStatusClassName(status: string) {
+  if (status === "รอชำระเงิน") return "bg-amber-50 text-amber-700";
+  if (status === "ส่งแล้ว") return "bg-green-50 text-[#158257]";
+  if (status === "หมดเวลา" || status === "ยกเลิก") return "bg-red-50 text-red-700";
+  return "bg-blue-50 text-brand";
 }

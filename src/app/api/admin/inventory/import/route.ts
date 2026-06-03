@@ -1,14 +1,8 @@
-import { z } from "zod";
 import { parseVoucherCsv } from "@/lib/voucher-csv";
-import { encryptVoucherCode, hashVoucherCode } from "@/lib/voucher-crypto";
+import { parseVoucherJsonPayload } from "@/lib/voucher-import";
+import { encryptVoucherCode } from "@/lib/voucher-crypto";
 import { requirePrisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
-
-const manualSchema = z.object({
-  variantSlug: z.string().trim().min(1),
-  code: z.string().trim().min(1),
-  expiresAt: z.string().trim().optional(),
-});
 
 export async function POST(request: Request) {
   try {
@@ -17,20 +11,16 @@ export async function POST(request: Request) {
     const contentType = request.headers.get("content-type") ?? "";
     const normalizedRows = contentType.includes("text/csv")
       ? parseVoucherCsv(await request.text())
-      : await request.json().then((body) => {
-          const row = manualSchema.parse(body);
-          return [
-            {
-              variantSlug: row.variantSlug,
-              code: row.code,
-              expiresAt: row.expiresAt ? new Date(row.expiresAt) : undefined,
-              codeHash: hashVoucherCode(row.code),
-            },
-          ];
-        });
+      : parseVoucherJsonPayload(await request.json());
+    if (!normalizedRows.length) {
+      throw new Error("ไม่มี Voucher สำหรับนำเข้า");
+    }
 
     const variants = await prisma.productVariant.findMany({
-      where: { slug: { in: normalizedRows.map((row) => row.variantSlug) } },
+      where: {
+        slug: { in: normalizedRows.map((row) => row.variantSlug) },
+        isActive: true,
+      },
     });
     const variantsBySlug = new Map(variants.map((variant) => [variant.slug, variant]));
     if (variants.length !== new Set(normalizedRows.map((row) => row.variantSlug)).size) {
@@ -61,6 +51,7 @@ export async function POST(request: Request) {
       requested: normalizedRows.length,
       inserted: result.count,
       duplicates: normalizedRows.length - result.count,
+      variants: new Set(normalizedRows.map((row) => row.variantSlug)).size,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "นำเข้า Voucher ไม่สำเร็จ";

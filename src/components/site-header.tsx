@@ -3,6 +3,7 @@
 import { Menu, Search, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useCart } from "@/components/cart/cart-provider";
 import { Logo } from "@/components/ui/logo";
 import { authClient } from "@/lib/auth-client";
@@ -26,7 +27,12 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
+    <motion.header
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur"
+    >
       <div className="container-shell flex h-[74px] items-center justify-between gap-6">
         <Logo />
         <nav className="hidden items-center gap-8 lg:flex" aria-label="เมนูหลัก">
@@ -90,6 +96,6 @@ export function SiteHeader() {
           </button>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }

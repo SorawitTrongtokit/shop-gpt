@@ -53,28 +53,52 @@ export function OrdersList({
 
   return (
     <div className="mt-8 grid gap-4">
-      {orders.map((order) => (
-        <Link
-          key={order.orderNumber}
-          href={`/orders/${order.orderNumber}`}
-          className="flex flex-col justify-between gap-4 rounded-xl border border-line p-5 hover:border-blue-300 sm:flex-row sm:items-center"
-        >
-          <div className="flex items-center gap-4">
-            <span className="flex size-12 items-center justify-center rounded-full bg-green-50 text-[#13915b]">
-              <PackageCheck size={22} />
-            </span>
-            <div>
-              <p className="font-black">{order.orderNumber}</p>
-              <p className="mt-1 text-sm text-muted">
-                {order.itemCount} รายการ • {new Date(order.createdAt).toLocaleString("th-TH")}
-              </p>
+      {orders.map((order) => {
+        const isPending = order.status === "PENDING_PAYMENT";
+        return (
+          <Link
+            key={order.orderNumber}
+            href={
+              isPending
+                ? `/checkout/payment/${order.orderNumber}`
+                : `/orders/${order.orderNumber}`
+            }
+            className="flex flex-col justify-between gap-4 rounded-xl border border-line p-5 hover:border-blue-300 sm:flex-row sm:items-center"
+          >
+            <div className="flex items-center gap-4">
+              <span
+                className={`flex size-12 items-center justify-center rounded-full ${
+                  isPending ? "bg-amber-50 text-amber-700" : "bg-green-50 text-[#13915b]"
+                }`}
+              >
+                {isPending ? <Clock3 size={22} /> : <PackageCheck size={22} />}
+              </span>
+              <div>
+                <p className="font-black">{order.orderNumber}</p>
+                <p className="mt-1 text-sm text-muted">
+                  {order.itemCount} รายการ • {new Date(order.createdAt).toLocaleString("th-TH")}
+                </p>
+              </div>
             </div>
-          </div>
-          <span className="text-sm font-bold text-[#13915b]">
-            {order.status === "FULFILLED" ? "ส่ง Voucher แล้ว" : order.status}
-          </span>
-        </Link>
-      ))}
+            <span
+              className={`text-sm font-bold ${
+                isPending ? "text-amber-700" : "text-[#13915b]"
+              }`}
+            >
+              {getOrderStatusLabel(order.status)}
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
+}
+
+function getOrderStatusLabel(status: string) {
+  if (status === "PENDING_PAYMENT") return "รอชำระเงิน";
+  if (status === "FULFILLED") return "ส่ง Voucher แล้ว";
+  if (status === "EXPIRED") return "หมดเวลา";
+  if (status === "CANCELLED") return "ยกเลิกแล้ว";
+  if (status === "PAID") return "ชำระเงินแล้ว";
+  return status;
 }

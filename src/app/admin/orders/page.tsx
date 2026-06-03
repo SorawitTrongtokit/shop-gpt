@@ -13,15 +13,19 @@ export default async function AdminOrdersPage() {
           customer: order.customerName,
           product: order.items[0]?.productName ?? "-",
           total: formatTHB(order.total),
-          status:
-            order.status === "PENDING_PAYMENT"
-              ? "รอชำระเงิน"
-              : order.status === "FULFILLED"
-                ? "ส่งแล้ว"
-                : order.status,
+          status: getAdminOrderStatusLabel(order.status),
           date: order.createdAt.toLocaleDateString("th-TH"),
         }))}
       />
     </AdminShell>
   );
+}
+
+function getAdminOrderStatusLabel(status: string) {
+  if (status === "PENDING_PAYMENT") return "รอชำระเงิน";
+  if (status === "FULFILLED") return "ส่งแล้ว";
+  if (status === "EXPIRED") return "หมดเวลา";
+  if (status === "CANCELLED") return "ยกเลิก";
+  if (status === "PAID") return "ชำระเงินแล้ว";
+  return status;
 }

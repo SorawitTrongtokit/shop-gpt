@@ -19,7 +19,7 @@ describe("verifyEasySlipBankImage security rules", () => {
 
   it("throws if slip receiver does not match shop promptpay ID", async () => {
     process.env.EASYSLIP_API_KEY = "test";
-    process.env.PROMPTPAY_ID = "0812345678"; // last 4 = 5678
+    process.env.PROMPTPAY_ID = "0812345678"; // 10 digits
     
     global.fetch = async () => ({
       ok: true,
@@ -27,7 +27,7 @@ describe("verifyEasySlipBankImage security rules", () => {
         success: true,
         data: {
           amountInSlip: 100,
-          receiver: { proxy: { account: "xxx-xxx-9999" } } // wrong receiver
+          rawSlip: { receiver: { proxy: { account: "082-xxx-5678" } } } // wrong receiver (first digit differs)
         }
       })
     }) as any;
@@ -38,7 +38,7 @@ describe("verifyEasySlipBankImage security rules", () => {
 
   it("succeeds if receiver matches and amount matches", async () => {
     process.env.EASYSLIP_API_KEY = "test";
-    process.env.PROMPTPAY_ID = "0812345678"; // last 4 = 5678
+    process.env.PROMPTPAY_ID = "0812345678"; 
     
     global.fetch = async () => ({
       ok: true,
@@ -46,7 +46,7 @@ describe("verifyEasySlipBankImage security rules", () => {
         success: true,
         data: {
           amountInSlip: 100,
-          receiver: { proxy: { account: "xxx-xxx-5678" } } // correct receiver
+          rawSlip: { receiver: { proxy: { account: "081-xxx-*678" } } } // correct receiver masked
         }
       })
     }) as any;

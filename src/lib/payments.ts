@@ -24,17 +24,6 @@ type EasySlipSuccessResponse = {
     amountInSlip?: number;
     amountInOrder?: number;
     isAmountMatched?: boolean;
-    receiver?: {
-      account?: {
-        name?: { th?: string; en?: string };
-        bank?: { id?: string; name?: string };
-        account?: string;
-      };
-      proxy?: {
-        type?: string;
-        account?: string;
-      };
-    };
     rawSlip?: {
       payload?: string;
       transRef?: string;
@@ -46,6 +35,21 @@ type EasySlipSuccessResponse = {
       receivingBank?: string;
       transDate?: string;
       transTime?: string;
+      receiver?: {
+        account?: {
+          name?: { th?: string; en?: string };
+          bank?: { id?: string; name?: string };
+          account?: string;
+          proxy?: {
+            type?: string;
+            account?: string;
+          };
+        };
+        proxy?: {
+          type?: string;
+          account?: string;
+        };
+      };
     };
   };
   message?: string;
@@ -119,11 +123,48 @@ export async function verifyEasySlipBankImage({
     throw new Error("ไม่สามารถอ่านยอดเงินจากสลิปได้");
   }
 
-  // Verify receiver account ends with the last 4 digits of our PromptPay ID
+  // Verify receiver account using wildcard-aware matching
   const shopPromptPay = getPromptPayId().replace(/\D/g, "");
-  const last4 = shopPromptPay.slice(-4);
-  const receiverAcc = (result.data.receiver?.proxy?.account ?? result.data.receiver?.account?.account ?? "").replace(/\D/g, "");
-  if (!receiverAcc.endsWith(last4)) {
+  
+  // EasySlip API sometimes puts proxy inside account, sometimes at the root of receiver,
+  // and sometimes the account number is just a string under account.account.
+  const proxyAcc = result.data.rawSlip?.receiver?.account?.proxy?.account;
+  const directProxyAcc = result.data.rawSlip?.receiver?.proxy?.account;
+  const directAcc = result.data.rawSlip?.receiver?.account?.account;
+  
+  // Try to find the account number in any of the possible fields
+  const receiverAccRaw = proxyAcc ?? directProxyAcc ?? (typeof directAcc === 'string' ? directAcc : "");
+  const receiverMasked = receiverAccRaw.replace(/[^a-zA-Z0-9*]/g, "").toLowerCase().replace(/x/g, "*");
+
+  let isMatch = true;
+  if (receiverMasked) {
+    let sIdx = shopPromptPay.length - 1;
+    let rIdx = receiverMasked.length - 1;
+    
+    // Check digit by digit from the end
+    while (sIdx >= 0 && rIdx >= 0) {
+      if (receiverMasked[rIdx] !== '*' && shopPromptPay[sIdx] !== receiverMasked[rIdx]) {
+        isMatch = false;
+        break;
+      }
+      sIdx--;
+      rIdx--;
+    }
+    
+    if (isMatch && rIdx >= 0) {
+      for (let i = rIdx; i >= 0; i--) {
+        if (receiverMasked[i] !== '*') {
+          isMatch = false;
+          break;
+        }
+      }
+    }
+  } else {
+    // In strict mode, we should block if no receiver info is found
+    isMatch = false; 
+  }
+
+  if (!isMatch) {
     throw new Error("บัญชีผู้รับเงินในสลิปไม่ถูกต้อง (ไม่ใช่บัญชีของร้านค้า)");
   }
 
